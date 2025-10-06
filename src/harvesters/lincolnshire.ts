@@ -39,10 +39,18 @@ class LincolnshireHarvester extends CkanHarvester {
     };
 
     const extraFields: Record<string, any> = {
-      harv_metadata_created: pkg?.metadata_created,
-      harv_metadata_modified: pkg?.metadata_modified,
-      harv_groups: pkg?.groups,
-      harv_organization: pkg?.organization,
+      harvested_pkg_created: pkg?.metadata_created,
+      harvested_pkg_modified: pkg?.metadata_modified,
+      harvested_pkg_groups: pkg?.groups?.map((g: any) => ({
+        name: g.name,
+        title: g.title || g.display_name,
+      })),
+      harvested_pkg_org: pkg?.organization
+        ? {
+            name: pkg.organization.name,
+            title: pkg.organization.title || pkg.organization.display_name,
+          }
+        : undefined,
     };
 
     if (pkg.resources?.length) {
