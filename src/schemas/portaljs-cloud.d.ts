@@ -18,7 +18,7 @@ export interface PortalJsCloudDataset {
   is_version_of?: string;
   contact_point?: string;
   resources?: CkanResource[];
-  tags?: {name: string}[];
+  tags?: { name: string }[];
   extras?: { key: string; value: string }[];
 }
 
@@ -27,4 +27,6 @@ export interface CkanResource {
   name?: string;
   description?: string;
   format?: string;
+  harvested_last_modified?: string;
+  position?: number;
 }

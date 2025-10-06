@@ -34,6 +34,8 @@ class LincolnshireHarvester extends CkanHarvester {
         url: r.url,
         format: r.format,
         description: r.description,
+        harvested_last_modified: r.last_modified,
+        position: r.position,
       })),
       extras: [],
     };
@@ -52,18 +54,6 @@ class LincolnshireHarvester extends CkanHarvester {
           }
         : undefined,
     };
-
-    if (pkg.resources?.length) {
-      extraFields.resources_extended = pkg.resources.map((r: any) => ({
-        name: r.name,
-        mimetype: r.mimetype,
-        created: r.created,
-        last_modified: r.last_modified,
-        state: r.state,
-        position: r.position,
-        size: r.size,
-      }));
-    }
 
     // Convert to extras array format
     dataset.extras = Object.entries(extraFields)
