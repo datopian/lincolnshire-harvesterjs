@@ -11,6 +11,9 @@ export async function ensureOrganizationExists(
   org: CkanOrganization
 ): Promise<void> {
   try {
+    console.log(
+      `Checking if organization exists: ${JSON.stringify(org, null, 2)}`
+    );
     await CkanRequest.get(`organization_show?id=${org.name}`, {
       ckanUrl: portalConfig.ckanUrl,
       apiKey: portalConfig.ckanApiToken,
@@ -41,6 +44,7 @@ export async function ensureOrganizationExists(
 
 export async function ensureGroupExists(group: CkanGroup): Promise<void> {
   try {
+    console.log(`Checking if group exists: ${JSON.stringify(group, null, 2)}`);
     await CkanRequest.get(`group_show?id=${group.name}`, {
       ckanUrl: portalConfig.ckanUrl,
       apiKey: portalConfig.ckanApiToken,
