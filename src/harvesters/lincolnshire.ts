@@ -23,6 +23,7 @@ class LincolnshireHarvester extends CkanHarvester {
         title: pkg.organization.title || pkg.organization.display_name,
         description: pkg.organization.description,
         groups: [{ name: owner_org }],
+        users: [{ name: env.PORTALJS_CLOUD_MAIN_USER, capacity: "admin" }],
       });
     }
 
@@ -33,6 +34,7 @@ class LincolnshireHarvester extends CkanHarvester {
           title: group.title || group.display_name,
           description: group.description,
           groups: [{ name: env.PORTALJS_CLOUD_MAIN_GROUP }],
+          users: [{ name: env.PORTALJS_CLOUD_MAIN_USER, capacity: "admin" }],
         });
       }
     }

@@ -29,12 +29,14 @@ export interface EntityMetadata {
     title?: string;
     description?: string;
     groups?: Array<{ name: string }>;
+    users?: Array<{ name: string; capacity: string }>;
   }>;
   groups: Array<{
     name: string;
     title?: string;
     description?: string;
     groups?: Array<{ name: string }>;
+    users?: Array<{ name: string; capacity: string }>;
   }>;
 }
 

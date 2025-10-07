@@ -38,6 +38,7 @@ interface CkanGroup {
   description?: string;
   image_url?: string;
   groups?: Array<{ name: string }>;
+  users?: Array<{ name: string; capacity: string }>;
 }
 
 interface CkanOrganization {
@@ -46,4 +47,5 @@ interface CkanOrganization {
   description?: string;
   image_url?: string;
   groups?: Array<{ name: string }>;
+  users?: Array<{ name: string; capacity: string }>;
 }

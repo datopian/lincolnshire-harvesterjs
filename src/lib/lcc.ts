@@ -70,5 +70,6 @@ export async function ensureMainGroupExists(): Promise<void> {
     name: env.PORTALJS_CLOUD_MAIN_GROUP,
     title: env.PORTALJS_CLOUD_MAIN_GROUP,
     description: "Main parent group for harvested datasets",
+    users: [{ name: env.PORTALJS_CLOUD_MAIN_USER, capacity: "admin" }],
   });
 }
