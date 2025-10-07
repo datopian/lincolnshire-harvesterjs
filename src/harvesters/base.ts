@@ -11,6 +11,7 @@ import {
   ensureOrganizationExists,
   ensureGroupExists,
 } from "../lib/lcc";
+import { env } from "../../config";
 
 export type BaseHarvesterConfig = {
   source: {
@@ -85,7 +86,10 @@ export abstract class BaseHarvester<
       return;
     }
 
-    await ensureOrganizationExists(org);
+    await withRetry(
+      () => ensureOrganizationExists(org),
+      `ensure organization ${org.name}`
+    );
     this.createdOrganizations.add(org.name);
   }
 
@@ -105,7 +109,10 @@ export abstract class BaseHarvester<
       return;
     }
 
-    await ensureGroupExists(group);
+    await withRetry(
+      () => ensureGroupExists(group),
+      `ensure group ${group.name}`
+    );
     this.createdGroups.add(group.name);
   }
 
@@ -115,7 +122,10 @@ export abstract class BaseHarvester<
     // Ensure main group exists before harvesting
     if (!this.config.dryRun) {
       console.log("Ensuring main group exists...");
-      await ensureMainGroupExists();
+      await withRetry(
+        () => ensureMainGroupExists(),
+        `ensure main group ${env.PORTALJS_CLOUD_MAIN_GROUP}`
+      );
     }
 
     const jobs: Promise<void>[] = [];
