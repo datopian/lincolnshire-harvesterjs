@@ -20,6 +20,7 @@ export interface PortalJsCloudDataset {
   resources?: CkanResource[];
   tags?: { name: string }[];
   extras?: { key: string; value: string }[];
+  groups?: Array<{ name: string }>;
 }
 
 export interface CkanResource {
@@ -29,4 +30,20 @@ export interface CkanResource {
   format?: string;
   harvested_last_modified?: string;
   position?: number;
+}
+
+interface CkanGroup {
+  name: string;
+  title?: string;
+  description?: string;
+  image_url?: string;
+  groups?: Array<{ name: string }>;
+}
+
+interface CkanOrganization {
+  name: string;
+  title?: string;
+  description?: string;
+  image_url?: string;
+  groups?: Array<{ name: string }>;
 }

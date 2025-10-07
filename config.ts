@@ -15,7 +15,7 @@ const EnvSchema = z.object({
     .default("https://api.cloud.portaljs.com"),
   PORTALJS_CLOUD_API_KEY: z.string().min(1),
   PORTALJS_CLOUD_MAIN_ORG: z.string().min(1),
-
+  PORTALJS_CLOUD_MAIN_GROUP: z.string().min(1),
   CONCURRENCY: z.coerce.number().default(4),
   RATE_LIMIT_RPS: z.coerce.number().default(2),
   RETRY_MAX_ATTEMPTS: z.coerce.number().default(2),
