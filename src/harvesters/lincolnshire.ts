@@ -5,6 +5,8 @@ import { BaseHarvesterConfig, EntityMetadata } from "./base";
 import { CkanPackage } from "@/schemas/ckanPackage";
 import { PortalJsCloudDataset } from "@/schemas/portaljs-cloud";
 import { uploadFile } from "../lib/resourceuploader";
+import axios from "axios";
+import path from "path";
 
 @Harvester
 class LincolnshireHarvester extends CkanHarvester {
@@ -43,6 +45,48 @@ class LincolnshireHarvester extends CkanHarvester {
     return { organizations, groups };
   }
 
+  async isDownloadableContent(url: string): Promise<boolean> {
+    const urlObj = new URL(url);
+    const pathExt = path.extname(urlObj.pathname).toLowerCase();
+    const downloadableExts = [
+      ".csv",
+      ".xlsx",
+      ".xls",
+      ".pdf",
+      ".zip",
+      ".json",
+      ".geojson",
+      ".xml",
+    ];
+
+    if (downloadableExts.includes(pathExt)) {
+      return true;
+    }
+
+    try {
+      const response = await axios.head(url, { timeout: 5000 });
+      const contentType = response.headers["content-type"] || "";
+
+      const downloadableTypes = [
+        "text/csv",
+        "application/csv",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/pdf",
+        "application/zip",
+        "application/json",
+        "application/xml",
+      ];
+
+      return downloadableTypes.some((type) => contentType.includes(type));
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      console.warn(`Failed to check content type for ${url}: ${errorMessage}`);
+      return false;
+    }
+  }
+
   async mapSourceDatasetToTarget(
     pkg: CkanPackage
   ): Promise<PortalJsCloudDataset> {
@@ -62,7 +106,9 @@ class LincolnshireHarvester extends CkanHarvester {
       (pkg.resources || []).map(async (r: any) => {
         if (r.url) {
           const isUpload =
-            r.url_type === "upload" || r.url.includes(env.SOURCE_API_URL);
+            r.url_type === "upload" ||
+            r.url.includes(env.SOURCE_API_URL) ||
+            (await this.isDownloadableContent(r.url));
           if (isUpload) {
             try {
               const newUrl = await uploadFile(r.url);
