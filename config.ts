@@ -26,6 +26,11 @@ const EnvSchema = z.object({
     .optional()
     .default("false")
     .transform((val) => val === "true"),
+  R2_ACCESS_KEY_ID: z.string().min(1),
+  R2_SECRET_KEY_ID: z.string().min(1),
+  R2_BUCKET_NAME: z.string().min(1),
+  NEXT_PUBLIC_R2_PUBLIC_URL: z.string().url().min(1),
+  R2_ACCOUNT_ID: z.string().min(1),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

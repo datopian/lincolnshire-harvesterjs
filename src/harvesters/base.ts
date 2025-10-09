@@ -54,7 +54,7 @@ export abstract class BaseHarvester<
   abstract getSourceDatasets(): Promise<SourceDatasetT[]>;
   abstract mapSourceDatasetToTarget(
     dataset: SourceDatasetT
-  ): PortalJsCloudDataset;
+  ): PortalJsCloudDataset | Promise<PortalJsCloudDataset>;
 
   // Optional method that can be overridden by subclasses
   extractEntityMetadata?(dataset: SourceDatasetT): EntityMetadata;
@@ -159,7 +159,9 @@ export abstract class BaseHarvester<
           }
 
           // Map and upsert dataset
-          const targetPackage = this.mapSourceDatasetToTarget(sourcePkg);
+          const targetPackage = await Promise.resolve(
+            this.mapSourceDatasetToTarget(sourcePkg)
+          );
           await withRetry(
             () =>
               this.upsertIntoTarget({

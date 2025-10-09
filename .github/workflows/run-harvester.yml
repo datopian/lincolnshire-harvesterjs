@@ -29,4 +29,9 @@ jobs:
           PORTALJS_CLOUD_MAIN_ORG: ${{ secrets.PORTALJS_CLOUD_MAIN_ORG }}
           PORTALJS_CLOUD_MAIN_GROUP: ${{ secrets.PORTALJS_CLOUD_MAIN_GROUP }}
           PORTALJS_CLOUD_MAIN_USER: ${{ secrets.PORTALJS_CLOUD_MAIN_USER }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_KEY_ID: ${{ secrets.R2_SECRET_KEY_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          NEXT_PUBLIC_R2_PUBLIC_URL: ${{ secrets.NEXT_PUBLIC_R2_PUBLIC_URL }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
         run: npx ts-node index.ts

@@ -4,6 +4,7 @@ import { Harvester } from ".";
 import { BaseHarvesterConfig, EntityMetadata } from "./base";
 import { CkanPackage } from "@/schemas/ckanPackage";
 import { PortalJsCloudDataset } from "@/schemas/portaljs-cloud";
+import { uploadFile } from "../lib/resourceuploader";
 
 @Harvester
 class LincolnshireHarvester extends CkanHarvester {
@@ -42,7 +43,9 @@ class LincolnshireHarvester extends CkanHarvester {
     return { organizations, groups };
   }
 
-  mapSourceDatasetToTarget(pkg: CkanPackage): PortalJsCloudDataset {
+  async mapSourceDatasetToTarget(
+    pkg: CkanPackage
+  ): Promise<PortalJsCloudDataset> {
     const owner_org = env.PORTALJS_CLOUD_MAIN_ORG;
     const main_group = env.PORTALJS_CLOUD_MAIN_GROUP;
 
@@ -54,6 +57,42 @@ class LincolnshireHarvester extends CkanHarvester {
       pkg.groups?.map((g: any) => ({
         name: `${main_group}--${g.name}`,
       })) || [];
+
+    const processedResources = await Promise.all(
+      (pkg.resources || []).map(async (r: any) => {
+        if (r.url) {
+          const isUpload =
+            r.url_type === "upload" || r.url.includes(env.SOURCE_API_URL);
+          if (isUpload) {
+            try {
+              const newUrl = await uploadFile(r.url);
+              return {
+                name: r.name,
+                url: newUrl,
+                format: r.format,
+                description: r.description,
+                harvested_last_modified: r.last_modified,
+                position: r.position,
+              };
+            } catch (err: any) {
+              console.error(
+                `Failed to upload file for resource ${r.name}: `,
+                err.message || err
+              );
+              throw err;
+            }
+          }
+        }
+        return {
+          name: r.name,
+          url: r.url,
+          format: r.format,
+          description: r.description,
+          harvested_last_modified: r.last_modified,
+          position: r.position,
+        };
+      })
+    );
 
     const dataset: PortalJsCloudDataset = {
       owner_org: actualOwnerOrg,
@@ -70,14 +109,7 @@ class LincolnshireHarvester extends CkanHarvester {
       author_email: pkg.author_email,
       maintainer: pkg.maintainer,
       maintainer_email: pkg.maintainer_email,
-      resources: (pkg.resources || []).map((r: any) => ({
-        name: r.name,
-        url: r.url,
-        format: r.format,
-        description: r.description,
-        harvested_last_modified: r.last_modified,
-        position: r.position,
-      })),
+      resources: processedResources,
       groups: groups,
       extras: [],
     };
