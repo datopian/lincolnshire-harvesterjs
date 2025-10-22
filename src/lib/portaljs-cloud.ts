@@ -3,6 +3,7 @@ import { env } from "../../config";
 import { PortalJsCloudDataset } from "@/schemas/portaljs-cloud";
 import { CkanRequestError } from "@portaljs/ckan-api-client-js";
 import { serializeError } from "./utils";
+import CkanRequest from "@portaljs/ckan-api-client-js";
 
 const portalConfig = {
   ckanUrl: env.PORTALJS_CLOUD_API_URL,
@@ -16,6 +17,26 @@ export async function getDatasetList() {
       organizationId: env.PORTALJS_CLOUD_MAIN_ORG,
     })
   ).map((ds) => ds.name);
+}
+
+export async function getDatasetByName(
+  name: string
+): Promise<PortalJsCloudDataset | null> {
+  try {
+    const { result } = (await CkanRequest.get(`package_show?id=${name}`, {
+      ckanUrl: portalConfig.ckanUrl,
+      apiKey: portalConfig.ckanApiToken,
+    })) as { result: PortalJsCloudDataset };
+    return result;
+  } catch (error) {
+    if (
+      error instanceof CkanRequestError &&
+      error.message.includes("Not found")
+    ) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function createDataset(dataset: PortalJsCloudDataset) {

@@ -3,8 +3,9 @@ import { CkanHarvester } from "./ckan";
 import { Harvester } from ".";
 import { BaseHarvesterConfig, EntityMetadata } from "./base";
 import { CkanPackage } from "@/schemas/ckanPackage";
-import { PortalJsCloudDataset } from "@/schemas/portaljs-cloud";
-import { uploadFile } from "../lib/resourceuploader";
+import { PortalJsCloudDataset, CkanResource } from "@/schemas/portaljs-cloud";
+import { uploadFile, deleteFileFromBucket } from "../lib/resourceuploader";
+import { getDatasetByName } from "../lib/portaljs-cloud";
 import axios from "axios";
 import path from "path";
 
@@ -87,6 +88,62 @@ class LincolnshireHarvester extends CkanHarvester {
     }
   }
 
+  private async processAndUploadResource(
+    resource: any,
+    existingResource?: CkanResource
+  ): Promise<CkanResource> {
+    const shouldUpload =
+      resource.url &&
+      (resource.url_type === "upload" ||
+        resource.url.includes(env.SOURCE_API_URL) ||
+        (await this.isDownloadableContent(resource.url)));
+
+    if (!shouldUpload) {
+      return {
+        name: resource.name,
+        url: resource.url,
+        format: resource.format,
+        description: resource.description,
+        harvested_last_modified: resource.last_modified,
+        position: resource.position,
+      };
+    }
+
+    try {
+      if (
+        existingResource?.url &&
+        existingResource.url !== resource.url &&
+        existingResource.url.startsWith(env.NEXT_PUBLIC_R2_PUBLIC_URL)
+      ) {
+        console.log(`Deleting old file: ${existingResource.url}`);
+        await deleteFileFromBucket(existingResource.url, this.config.dryRun);
+      }
+
+      console.log(`Uploading resource: ${resource.name} (${resource.url})`);
+      const newUrl = await uploadFile(resource.url, this.config.dryRun);
+
+      return {
+        name: resource.name,
+        url: newUrl,
+        format: resource.format,
+        description: resource.description,
+        harvested_last_modified: resource.last_modified,
+        position: resource.position,
+      };
+    } catch (err: any) {
+      console.error(`Failed to upload ${resource.name}: ${err.message || err}`);
+      console.log(`Using original URL for: ${resource.name}`);
+      return {
+        name: resource.name,
+        url: resource.url,
+        format: resource.format,
+        description: resource.description,
+        harvested_last_modified: resource.last_modified,
+        position: resource.position,
+      };
+    }
+  }
+
   async mapSourceDatasetToTarget(
     pkg: CkanPackage
   ): Promise<PortalJsCloudDataset> {
@@ -102,42 +159,17 @@ class LincolnshireHarvester extends CkanHarvester {
         name: `${main_group}--${g.name}`,
       })) || [];
 
+    const targetDatasetName = `${owner_org}--${pkg.name}`;
+
+    const existingDataset = await getDatasetByName(targetDatasetName);
+    const existingResourcesMap = new Map<string, CkanResource>(
+      existingDataset?.resources?.map((r) => [r.name!, r]) || []
+    );
+
     const processedResources = await Promise.all(
-      (pkg.resources || []).map(async (r: any) => {
-        if (r.url) {
-          const isUpload =
-            r.url_type === "upload" ||
-            r.url.includes(env.SOURCE_API_URL) ||
-            (await this.isDownloadableContent(r.url));
-          if (isUpload) {
-            try {
-              const newUrl = await uploadFile(r.url);
-              return {
-                name: r.name,
-                url: newUrl,
-                format: r.format,
-                description: r.description,
-                harvested_last_modified: r.last_modified,
-                position: r.position,
-              };
-            } catch (err: any) {
-              console.error(
-                `Failed to upload file for resource ${r.name}: `,
-                err.message || err
-              );
-              throw err;
-            }
-          }
-        }
-        return {
-          name: r.name,
-          url: r.url,
-          format: r.format,
-          description: r.description,
-          harvested_last_modified: r.last_modified,
-          position: r.position,
-        };
-      })
+      (pkg.resources || []).map((r: any) =>
+        this.processAndUploadResource(r, existingResourcesMap.get(r.name))
+      )
     );
 
     const dataset: PortalJsCloudDataset = {
@@ -157,6 +189,7 @@ class LincolnshireHarvester extends CkanHarvester {
       maintainer_email: pkg.maintainer_email,
       resources: processedResources,
       groups: groups,
+      source: pkg.url ? [pkg.url] : undefined,
       extras: [],
     };
 

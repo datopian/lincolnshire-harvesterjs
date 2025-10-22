@@ -1,5 +1,5 @@
 import axios from "axios";
-import { S3Client } from "@aws-sdk/client-s3";
+import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { env } from "../../config";
 import { v4 as uuidv4 } from "uuid";
@@ -31,7 +31,50 @@ const s3client = new S3Client({
   forcePathStyle: false,
 });
 
-export async function uploadFile(fileUrl: string): Promise<string> {
+export async function deleteFileFromBucket(
+  url: string,
+  dryRun = false
+): Promise<void> {
+  try {
+    const key = extractKeyFromUrl(url);
+    if (!key) {
+      console.warn(`Could not extract key from URL: ${url}`);
+      return;
+    }
+
+    if (dryRun) {
+      console.log(`[dry run] Would delete file from bucket: ${key}`);
+      return;
+    }
+
+    await s3client.send(
+      new DeleteObjectCommand({
+        Bucket: env.R2_BUCKET_NAME,
+        Key: key,
+      })
+    );
+    console.log(`✓ Deleted old file from bucket: ${key}`);
+  } catch (error) {
+    console.error(`Failed to delete file from bucket: ${url}`, error);
+  }
+}
+
+function extractKeyFromUrl(url: string): string | null {
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname === new URL(env.NEXT_PUBLIC_R2_PUBLIC_URL).hostname) {
+      return urlObj.pathname.substring(1);
+    }
+  } catch (error) {
+    console.error(`Invalid URL: ${url}`);
+  }
+  return null;
+}
+
+export async function uploadFile(
+  fileUrl: string,
+  dryRun = false
+): Promise<string> {
   return await withRetry(async () => {
     // Extract filename from URL
     const urlPath = new URL(fileUrl).pathname;
@@ -48,6 +91,13 @@ export async function uploadFile(fileUrl: string): Promise<string> {
 
     // Full key with path
     const fullKey = `${_filePath}/${key}.${extension}`;
+    const publicUrl = `${env.NEXT_PUBLIC_R2_PUBLIC_URL}/${fullKey}`;
+
+    if (dryRun) {
+      console.log(`[dry run] Would upload ${filename} to ${fullKey}`);
+      console.log(`[dry run] Would return URL: ${publicUrl}`);
+      return publicUrl;
+    }
 
     console.log(`Uploading ${filename} to ${fullKey}`);
 
@@ -72,8 +122,6 @@ export async function uploadFile(fileUrl: string): Promise<string> {
     });
 
     await uploader.done();
-
-    const publicUrl = `${env.NEXT_PUBLIC_R2_PUBLIC_URL}/${fullKey}`;
     console.log(`Upload complete: ${publicUrl}`);
     return publicUrl;
   }, `upload file ${fileUrl}`);
