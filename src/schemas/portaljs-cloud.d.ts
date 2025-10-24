@@ -21,6 +21,7 @@ export interface PortalJsCloudDataset {
   tags?: { name: string }[];
   extras?: { key: string; value: string }[];
   groups?: Array<{ name: string }>;
+  source?: string[];
 }
 
 export interface CkanResource {
