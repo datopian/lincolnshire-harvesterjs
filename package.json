@@ -4,7 +4,8 @@
   "scripts": {
     "start": "ts-node index.ts",
     "build": "tsc",
-    "test:upload": "ts-node src/lib/resourceuploader.ts"
+    "test:upload": "ts-node src/lib/resourceuploader.ts",
+    "patch:dataset": "ts-node src/scripts/patchdataset.ts"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",
